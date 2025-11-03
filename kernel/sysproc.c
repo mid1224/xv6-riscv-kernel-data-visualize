@@ -126,8 +126,9 @@ sys_program(void)
   ks.freemem = kfreemem();
   countprocs(&ks);
   
-  // Print the results to the console
-  printf("kernel: Free Memory: %ld bytes\n", ks.freemem);
+  // Print the results to the kernel console
+  printf("kernel: Free Memory (in bytes): %ld\n", ks.freemem);
+  printf("kernel: Free Memory (in megabytes): %ld\n", ks.freemem/(1024 * 1024)); //Converted from byte to megabyte for easier reading
   printf("kernel: Total Procs: %d\n", ks.total_procs);
   printf("kernel: Runnable: %d\n", ks.n_runnable);
   printf("kernel: Sleeping: %d\n", ks.n_sleeping);
