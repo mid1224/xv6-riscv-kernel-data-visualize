@@ -6,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "vm.h"
+#include "kstats.h"
 
 uint64
 sys_exit(void)
@@ -117,6 +118,21 @@ sys_program(void)
   struct proc *p = myproc();
 
   printf("kernel: program() called by pid %d (running in kernel)\n", p->pid);
+
+  
+  struct kstats ks; // Declare a struct to store the data
+  
+  // Call our data-gathering functions
+  ks.freemem = kfreemem();
+  countprocs(&ks);
+  
+  // Print the results to the console
+  printf("kernel: Free Memory: %ld bytes\n", ks.freemem);
+  printf("kernel: Total Procs: %d\n", ks.total_procs);
+  printf("kernel: Runnable: %d\n", ks.n_runnable);
+  printf("kernel: Sleeping: %d\n", ks.n_sleeping);
+  printf("kernel: Zombie: %d\n", ks.n_zombie);
+  printf("kernel: Running: %d\n", ks.n_running);
 
   return 0;
 }

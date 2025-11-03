@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "kstats.h"
 
 struct cpu cpus[NCPU];
 
@@ -686,5 +687,36 @@ procdump(void)
       state = "???";
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
+  }
+}
+
+// Counts processes by state and change the data in kstats accordingly.
+void
+countprocs(struct kstats *ks)
+{
+  struct proc *p;
+
+  // Initialize counts to zero
+  ks->n_runnable = 0;
+  ks->n_sleeping = 0;
+  ks->n_zombie = 0;
+  ks->n_running = 0;
+  ks->total_procs = 0;
+
+  // Iterate the process table.
+  for(p = proc; p < &proc[NPROC]; p++) {
+    // We must acquire each p->lock to read p->state safely.
+    acquire(&p->lock);
+    if(p->state != UNUSED) {
+      ks->total_procs++;
+      switch(p->state) {
+        case RUNNABLE: ks->n_runnable++; break;
+        case SLEEPING: ks->n_sleeping++; break;
+        case ZOMBIE:   ks->n_zombie++; break;
+        case RUNNING:  ks->n_running++; break;
+        default: break;
+      }
+    }
+    release(&p->lock);
   }
 }

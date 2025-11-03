@@ -80,3 +80,24 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+// Find the amount of free memory (for "freemem" in kstats.h)
+// Counts the number of free pages and returns free memory in bytes.
+uint64
+kfreemem(void)
+{
+  struct run *r;
+  uint64 n_free_pages = 0;
+
+  acquire(&kmem.lock);
+  r = kmem.freelist;
+  while(r){
+    n_free_pages++;
+    r = r->next;
+  }
+  release(&kmem.lock);
+
+  uint64 freemem_byte = n_free_pages * PGSIZE;
+
+  return freemem_byte;
+}
