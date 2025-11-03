@@ -107,3 +107,16 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// !!! custom program here
+uint64
+sys_program(void)
+{
+  // the kernel side program lives here
+
+  struct proc *p = myproc();
+
+  printf("kernel: program() called by pid %d (running in kernel)\n", p->pid);
+
+  return 0;
+}
