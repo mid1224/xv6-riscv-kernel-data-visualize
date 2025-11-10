@@ -49,4 +49,4 @@ void* malloc(uint);
 void free(void*);
 
 // !!! custom program here
-int program(void);
+int kgetstats(void);

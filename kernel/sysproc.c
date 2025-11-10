@@ -111,13 +111,13 @@ sys_uptime(void)
 
 // !!! custom program here
 uint64
-sys_program(void)
+sys_kgetstats(void)
 {
   // the kernel side program lives here
 
   struct proc *p = myproc();
 
-  printf("kernel: program() called by pid %d (running in kernel)\n", p->pid);
+  printf("kernel: kgetstats called by pid %d (running in kernel)\n", p->pid);
 
   
   struct kstats ks; // Declare a struct to store the data

@@ -7,8 +7,8 @@ int main(void)
     // the user side program lives here
 
     // call kernel side "program"
-    program();
+    kgetstats();
 
-    printf("user: program() returned, back in user mode\n");
+    printf("user: kgetstats() returned, back in user mode\n");
     exit(0);
 }
