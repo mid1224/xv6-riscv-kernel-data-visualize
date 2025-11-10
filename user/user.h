@@ -1,3 +1,5 @@
+#include "kernel/kstats.h"
+
 #define SBRK_ERROR ((char *)-1)
 
 struct stat;
@@ -50,3 +52,4 @@ void free(void*);
 
 // !!! custom program here
 int kgetstats(void);
+int ugetstats(struct kstats*);

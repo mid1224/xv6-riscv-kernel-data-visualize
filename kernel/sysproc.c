@@ -110,15 +110,13 @@ sys_uptime(void)
 }
 
 // !!! custom program here
+// the kernel side program lives here
 uint64
-sys_kgetstats(void)
+sys_kgetstats(void) // Get stats and print out on kernel side
 {
-  // the kernel side program lives here
-
   struct proc *p = myproc();
 
   printf("kernel: kgetstats called by pid %d (running in kernel)\n", p->pid);
-
   
   struct kstats ks; // Declare a struct to store the data
   
@@ -136,4 +134,23 @@ sys_kgetstats(void)
   printf("kernel: Running: %d\n", ks.n_running);
 
   return 0;
+}
+
+uint64
+sys_ugetstats(void) // Get stats and return it to user space
+{
+  uint64 user_addr; // This will hold the user-space pointer
+  struct kstats ks;  // A kernel-space struct to hold the stats
+
+  // Get the pointer argument (the destination) from user space
+  argaddr(0, &user_addr);
+
+  // Fill the kernel-space struct
+  ks.freemem = kfreemem();
+  countprocs(&ks);
+
+  // Copy the struct from kernel space to user space
+  copyout(myproc()->pagetable, user_addr, (char *)&ks, sizeof(ks));
+
+  return 0; // Success
 }
