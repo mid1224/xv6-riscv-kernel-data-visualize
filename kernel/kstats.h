@@ -20,8 +20,7 @@ struct kstats {
   int n_running;       // Number of processes in RUNNING state
   int total_procs;     // Total processes in the table (not UNUSED)
 
-  // TO BE ADDED (?)
-  // uint64 uptime_ticks; // Kernel ticks since boot
+  uint uptime_ticks; // Kernel ticks since boot
 };
 
 #endif // _KSTATS_H_
