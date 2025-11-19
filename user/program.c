@@ -21,50 +21,83 @@ int main(void)
 
     struct kstats stat; // Store the data from ugetstats()
 
-    ugetstats(&stat);
+    // initial read so we have a "previous" snapshot
+    struct kstats prev;
+    if (ugetstats(&prev) < 0) {
+        printf("Error getting stats\n");
+        exit(1);
+    }
 
-    // Print the data we received from the kernel
-    printf("user: Free Memory (in bytes): %ld\n", stat.freemem);
-    printf("user: Free Memory (in megabytes): %ld\n", stat.freemem/(1024 * 1024)); //Converted from byte to megabyte for easier reading
-    printf("user: Total Procs: %d\n", stat.total_procs);
-    printf("user: Runnable: %d\n", stat.n_runnable);
-    printf("user: Sleeping: %d\n", stat.n_sleeping);
-    printf("user: Zombie: %d\n", stat.n_zombie);
-    printf("user: Running: %d\n", stat.n_running);
+    // Draw header once
+    printf(CLEAR_SCREEN);
+    printf("\x1b[?25l"); // Hide cursor
+    printf("======================================\n");
+    printf("      XV6 SYSTEM DASHBOARD            \n");
+    printf("======================================\n");
+    printf("System Uptime: %d seconds (%d ticks)\n", prev.uptime_ticks / 10, prev.uptime_ticks);
+    printf("--------------------------------------\n");
+    printf("Free Memory:   %ld bytes (%ld megabytes)\n", prev.freemem, prev.freemem / (1024 * 1024));
+    printf("--------------------------------------\n");
+    printf("PROCESS STATUS (Total: %d)\n", prev.total_procs);
+    printf(" [R] Running:  %d\n", prev.n_running);
+    printf(" [W] Runnable: %d\n", prev.n_runnable);
+    printf(" [S] Sleeping: %d\n", prev.n_sleeping);
+    printf(" [Z] Zombie:   %d\n", prev.n_zombie);
+    printf("======================================\n");
 
-    pause(20); // Temp delay for testing
-    printf("\n================ Test realtime result:\n");
-    pause(20);
-
-    while(1) 
+    while (1) 
     {
-        // Get the latest data
-        if(ugetstats(&stat) < 0) {
+        if (ugetstats(&stat) < 0) {
             printf("Error getting stats\n");
             exit(1);
         }
 
-        // Clear the screen so we can overwrite the old data
-        printf(CLEAR_SCREEN);
+        // Only update lines that changed.
+        // Line numbers correspond to the header printed above:
+        // 4 = System Uptime
+        // 6 = Free Memory
+        // 8 = PROCESS STATUS (total)
+        // 9 = Running
+        // 10 = Runnable
+        // 11 = Sleeping
+        // 12 = Zombie
 
-        // Print the data
-        printf("======================================\n");
-        printf("      XV6 SYSTEM DASHBOARD            \n");
-        printf("======================================\n");
-        // Convert ticks to seconds (approx 10 ticks = 1 sec in QEMU)
-        printf("System Uptime: %d seconds (%d ticks)\n", stat.uptime_ticks / 10, stat.uptime_ticks);
-        printf("--------------------------------------\n");
-        printf("Free Memory:   %ld bytes (%ld megabytes)\n", stat.freemem, stat.freemem/(1024 * 1024));
-        printf("--------------------------------------\n");
-        printf("PROCESS STATUS (Total: %d)\n", stat.total_procs);
-        printf(" [R] Running:  %d\n", stat.n_running);
-        printf(" [W] Runnable: %d\n", stat.n_runnable);
-        printf(" [S] Sleeping: %d\n", stat.n_sleeping);
-        printf(" [Z] Zombie:   %d\n", stat.n_zombie);
-        printf("======================================\n");
+        //plan to use switch case but messier than ifs
 
-        // Update Time Interval (20 ticks ~ 2 second)
-        pause(20);
+        if (stat.uptime_ticks != prev.uptime_ticks) {
+            // move to line 4, column 1 and overwrite (pad spaces to clear leftovers)
+            printf("\x1b[4;1HSystem Uptime: %d seconds (%d ticks)          \n", stat.uptime_ticks / 10, stat.uptime_ticks);
+        }
+
+        if (stat.freemem != prev.freemem) {
+            printf("\x1b[6;1HFree Memory:   %ld bytes (%ld megabytes)          \n", stat.freemem, stat.freemem / (1024 * 1024));
+        }
+
+        if (stat.total_procs != prev.total_procs) {
+            printf("\x1b[8;1HPROCESS STATUS (Total: %d)                  \n", stat.total_procs);
+        }
+
+        if (stat.n_running != prev.n_running) {
+            printf("\x1b[9;1H [R] Running:  %d                    \n", stat.n_running);
+        }
+
+        if (stat.n_runnable != prev.n_runnable) {
+            printf("\x1b[10;1H [W] Runnable: %d                    \n", stat.n_runnable);
+        }
+
+        if (stat.n_sleeping != prev.n_sleeping) {
+            printf("\x1b[11;1H [S] Sleeping: %d                    \n", stat.n_sleeping);
+        }
+
+        if (stat.n_zombie != prev.n_zombie) {
+            printf("\x1b[12;1H [Z] Zombie:   %d                    \n", stat.n_zombie);
+        }
+
+        // update rate
+        pause(1);
+
+        // commit
+        prev = stat;
     }
 
     exit(0);
