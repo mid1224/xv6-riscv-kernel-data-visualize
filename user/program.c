@@ -1,11 +1,19 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user.h"
+#include "kernel/fcntl.h"
 
 #define CLEAR_SCREEN "\x1b[2J\x1b[H"
 // ANSI Escape Codes
 // \x1b[2J  = Clear entire screen
 // \x1b[H   = Move cursor to top-left (Home)
+
+static void restore_and_exit(int code) {
+    // clear the screen, show cursor, then exit
+    printf(CLEAR_SCREEN);
+    printf("\x1b[?25h");
+    exit(code);
+}
 
 int main(void)
 {
@@ -25,7 +33,7 @@ int main(void)
     struct kstats prev;
     if (ugetstats(&prev) < 0) {
         printf("Error getting stats\n");
-        exit(1);
+        restore_and_exit(1);
     }
 
     // Draw header once
@@ -45,11 +53,27 @@ int main(void)
     printf(" [Z] Zombie:   %d\n", prev.n_zombie);
     printf("======================================\n");
 
-    while (1) 
+    // spawn watcher: creates "quit" file when user types 'x' or 'X'
+    if (fork() == 0) {
+        char ch;
+        while (read(0, &ch, 1) > 0) {
+            if (ch == 'x' || ch == 'X') {
+                int fd = open("quit", O_CREATE | O_WRONLY);
+                if (fd >= 0) {
+                    write(fd, "x", 1);
+                    close(fd);
+                }
+                exit(0);
+            }
+        }
+        exit(0);
+    }
+
+    while (1)
     {
         if (ugetstats(&stat) < 0) {
             printf("Error getting stats\n");
-            exit(1);
+            restore_and_exit(1);
         }
 
         // Only update lines that changed.
@@ -96,9 +120,16 @@ int main(void)
         // update rate
         pause(1);
 
-        // commit
+        // check if watcher requested quit
+        int qfd = open("quit", 0);
+        if (qfd >= 0) {
+            close(qfd);
+            unlink("quit");   // remove sentinel
+            restore_and_exit(0);
+        }
+
         prev = stat;
     }
 
-    exit(0);
+    restore_and_exit(0);
 }
