@@ -57,7 +57,7 @@ int main(void)
     if (fork() == 0) {
         char ch;
         while (read(0, &ch, 1) > 0) {
-            if (ch == 'x' || ch == 'X') {
+            if (ch == '\n') {
                 int fd = open("quit", O_CREATE | O_WRONLY);
                 if (fd >= 0) {
                     write(fd, "x", 1);
