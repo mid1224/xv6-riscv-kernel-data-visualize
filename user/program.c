@@ -37,21 +37,21 @@ int main(void)
     }
 
     // Draw header once
-    printf(CLEAR_SCREEN);
-    printf("\x1b[?25l"); // Hide cursor
-    printf("======================================\n");
-    printf("      XV6 SYSTEM DASHBOARD            \n");
-    printf("======================================\n");
-    printf("System Uptime: %d seconds (%d ticks)\n", prev.uptime_ticks / 10, prev.uptime_ticks);
-    printf("--------------------------------------\n");
-    printf("Free Memory:   %ld bytes (%ld megabytes)\n", prev.freemem, prev.freemem / (1024 * 1024));
-    printf("--------------------------------------\n");
-    printf("PROCESS STATUS (Total: %d)\n", prev.total_procs);
-    printf(" [R] Running:  %d\n", prev.n_running);
-    printf(" [W] Runnable: %d\n", prev.n_runnable);
-    printf(" [S] Sleeping: %d\n", prev.n_sleeping);
-    printf(" [Z] Zombie:   %d\n", prev.n_zombie);
-    printf("======================================\n");
+    // printf(CLEAR_SCREEN);
+    // printf("\x1b[?25l"); // Hide cursor
+    // printf("======================================\n");
+    // printf("      XV6 SYSTEM DASHBOARD            \n");
+    // printf("======================================\n");
+    // printf("System Uptime: %d seconds (%d ticks)\n", prev.uptime_ticks / 10, prev.uptime_ticks);
+    // printf("--------------------------------------\n");
+    // printf("Free Memory:   %ld bytes (%ld megabytes)\n", prev.freemem, prev.freemem / (1024 * 1024));
+    // printf("--------------------------------------\n");
+    // printf("PROCESS STATUS (Total: %d)\n", prev.total_procs);
+    // printf(" [R] Running:  %d\n", prev.n_running);
+    // printf(" [W] Runnable: %d\n", prev.n_runnable);
+    // printf(" [S] Sleeping: %d\n", prev.n_sleeping);
+    // printf(" [Z] Zombie:   %d\n", prev.n_zombie);
+    // printf("======================================\n");
 
     // spawn watcher: creates "quit" file when user types 'x' or 'X'
     if (fork() == 0) {
