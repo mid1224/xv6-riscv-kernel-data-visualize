@@ -1,166 +1,102 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
-#include "user.h"
+#include "user/user.h"
 #include "kernel/fcntl.h"
 
-/* Hardcoded total RAM for the memory bar (adjust to your QEMU -m value) */
-#define TOTAL_MEM (128ULL * 1024 * 1024) /* 128 MB */
+#define TOTAL_MEM (128ULL * 1024 * 1024)
+#define MAX_PROCS 64
+#define ESC "\x1b"
 
-#define CLEAR_SCREEN "\x1b[2J\x1b[H"
-#define HIDE_CURSOR  "\x1b[?25l"
-#define SHOW_CURSOR  "\x1b[?25h"
+// Generic function to draw any usage bar at a specific row
+void draw_bar(int row, uint64 val, uint64 max) {
+  int i;
+  int len = 20;
+  int filled;
 
-/* convenience: clear/show and exit cleanly */
-static void restore_and_exit(int code) {
-    printf(CLEAR_SCREEN);
-    printf(SHOW_CURSOR);
-    exit(code);
+  if (val > max)
+    val = max;
+
+  filled = (val * len) / max;
+
+  // Move cursor to start of bar
+  printf(ESC "[%d;1H[", row);
+
+  for(i = 0; i < len; i++){
+    if(i < filled)
+      printf("█");
+    else
+      printf("░");
+  }
+  
+  printf("] %d%%          ", (int)((val * 100) / max));
 }
 
-/* draw a memory bar with spaced bars: "[ | | |   ... ] 12% usage"
-   slots = number of 'bar' positions (each separated by one space) */
-static void draw_mem_bar(uint64 freemem, uint64 totalmem, int slots) {
-    int filled = 0;
-    if (totalmem > 0) {
-        uint64 used = (totalmem > freemem) ? (totalmem - freemem) : 0;
-        filled = (int)((used * (uint64)slots) / totalmem);
-        if (filled > slots) filled = slots;
-    }
-    /* Free Memory line (bytes + MB) at line 6 */
-    printf("\x1b[6;1HFree Memory:   %ld bytes (%ld megabytes)          \n",
-           (long)freemem, (long)(freemem / (1024 * 1024)));
+int main(void) {
+  struct kstats s;
+  int pid;
+  char c;
 
-    /* Bar line at line 7 — use block characters, no spaces */
-    printf("\x1b[7;1H[");
-    for (int i = 0; i < slots; i++) {
-        if (i < filled) printf("█"); /* full block for used */
-        else printf("░");             /* light shade for free */
-    }
-    /* percent usage = (used/total)*100 */
-    int pct = 0;
-    if (totalmem > 0) {
-        uint64 used = (totalmem > freemem) ? (totalmem - freemem) : 0;
-        pct = (int)((used * 100) / totalmem) ;
-    }
-    /* print number with printf (use plain %d) then write a literal '%' */
-    printf("] %d", pct);
-    write(1, "% usage          \n", sizeof("% usage          \n") - 1);
-}
+  // Fork a watcher process to handle input
+  pid = fork();
 
-/* draw the static header once using prev snapshot */
-static void draw_header(const struct kstats *prev) {
-    printf(CLEAR_SCREEN);
-    printf(HIDE_CURSOR);
-    printf("======================================\n");
-    printf("      XV6 SYSTEM DASHBOARD            \n");
-    printf("======================================\n");
-    /* Uptime line (line 4) */
-    printf("System Uptime: %d seconds (%d ticks)          \n", prev->uptime_ticks / 10, prev->uptime_ticks);
-    printf("--------------------------------------\n");
-    /* line 6 and 7 will be drawn by draw_mem_bar */
-    draw_mem_bar(prev->freemem, TOTAL_MEM, 20);
-    printf("--------------------------------------\n");
-    printf("PROCESS STATUS (Total: %d)\n", prev->total_procs);
-    printf(" [R] Running:  %d\n", prev->n_running);
-    printf(" [W] Runnable: %d\n", prev->n_runnable);
-    printf(" [S] Sleeping: %d\n", prev->n_sleeping);
-    printf(" [Z] Zombie:   %d\n", prev->n_zombie);
-    printf("======================================\n");
-}
-
-int main(void)
-{
-    struct kstats stat; // latest snapshot
-    struct kstats prev; // previous snapshot
-
-    printf("\n================ kgetstats() result:\n");
-    kgetstats();
-    printf("user: kgetstats() returned, back in user mode\n");
-    printf("\n================ ugetstats() result:\n");
-
-    if (ugetstats(&prev) < 0) {
-        printf("Error getting stats\n");
-        restore_and_exit(1);
-    }
-
-    /* print header once */
-    draw_header(&prev);
-
-    /* spawn watcher: pressing Enter (empty line) creates "quit" sentinel */
-    if (fork() == 0) {
-        char ch;
-        char buf[64];
-        int idx = 0;
-        while (read(0, &ch, 1) > 0) {
-            if (ch == '\r') continue;
-            if (ch == '\n') {
-                if (idx == 0) {
-                    int fd = open("quit", O_CREATE | O_WRONLY);
-                    if (fd >= 0) { write(fd, "x", 1); close(fd); }
-                    exit(0);
-                }
-                idx = 0;
-                continue;
-            }
-            if (idx < (int)sizeof(buf) - 1) buf[idx++] = ch;
-            /* quick quit on 'x' anywhere */
-            if (ch == 'x' || ch == 'X') {
-                int fd = open("quit", O_CREATE | O_WRONLY);
-                if (fd >= 0) { write(fd, "x", 1); close(fd); }
-                exit(0);
-            }
-        }
+  if(pid == 0) {
+    // Child: Input watcher
+    while(read(0, &c, 1) > 0) {
+      if(c == '\n') { // \n is newline = Enter key
+        close(open("quit", O_CREATE)); // Signal parent to quit
         exit(0);
+      }
+    }
+    exit(0);
+  }
+
+  // Dashboard
+  printf(ESC "[2J"); // Clear screen
+  printf(ESC "[?25l"); // Hide cursor
+  printf(ESC "[1;1H        XV6 SYSTEM DASHBOARD          ");
+  printf(ESC "[2;1H======================================");
+
+  // Main Loop: Runs until "quit" file exists
+  while(open("quit", 0) < 0) {
+    if(ugetstats(&s) < 0) {
+      printf("Stats Error\n");
+      break;
     }
 
-    while (1)
-    {
-        if (ugetstats(&stat) < 0) {
-            printf("Error getting stats\n");
-            restore_and_exit(1);
-        }
+    uint64 used = TOTAL_MEM - s.freemem;
 
-        /* update uptime (line 4) */
-        if (stat.uptime_ticks != prev.uptime_ticks) {
-            printf("\x1b[4;1HSystem Uptime: %d seconds (%d ticks)          \n",
-                   stat.uptime_ticks / 10, stat.uptime_ticks);
-        }
+    // 1. Uptime
+    printf(ESC "[3;1HSystem Uptime: %d s (%d ticks)    ", 
+           s.uptime_ticks/10, s.uptime_ticks);
 
-        /* update memory lines (6 + bar on 7) */
-        if (stat.freemem != prev.freemem) {
-            draw_mem_bar(stat.freemem, TOTAL_MEM, 20);
-        }
+    // 2. Memory Bar
+    printf(ESC "[5;1HMemory Used:   %d / %d MB    ", 
+           (int)(used >> 20), (int)(TOTAL_MEM >> 20));
+    draw_bar(6, used, TOTAL_MEM);
 
-        /* process summary and per-state lines */
-        if (stat.total_procs != prev.total_procs) {
-            printf("\x1b[9;1HPROCESS STATUS (Total: %d)                  \n", stat.total_procs);
-        }
-        if (stat.n_running != prev.n_running) {
-            printf("\x1b[10;1H [R] Running:  %d                    \n", stat.n_running);
-        }
-        if (stat.n_runnable != prev.n_runnable) {
-            printf("\x1b[11;1H [W] Runnable: %d                    \n", stat.n_runnable);
-        }
-        if (stat.n_sleeping != prev.n_sleeping) {
-            printf("\x1b[12;1H [S] Sleeping: %d                    \n", stat.n_sleeping);
-        }
-        if (stat.n_zombie != prev.n_zombie) {
-            printf("\x1b[13;1H [Z] Zombie:   %d                    \n", stat.n_zombie);
-        }
+    // 3. Process Bar (New Feature)
+    printf(ESC "[8;1HProcess Load:  %d / %d Slots    ", 
+           s.total_procs, MAX_PROCS);
+    draw_bar(9, s.total_procs, MAX_PROCS);
 
-        /* keep update cadence */
-        pause(1);
+    // 4. Details
+    printf(ESC "[11;1H [R] Running:  %d    ", s.n_running);
+    printf(ESC "[12;1H [W] Runnable: %d    ", s.n_runnable);
+    printf(ESC "[13;1H [S] Sleeping: %d    ", s.n_sleeping);
+    printf(ESC "[14;1H [Z] Zombie:   %d    ", s.n_zombie);
 
-        /* check sentinel */
-        int qfd = open("quit", 0);
-        if (qfd >= 0) {
-            close(qfd);
-            unlink("quit");
-            restore_and_exit(0);
-        }
+    pause(5); //Update every 5 tick ~ 0.5 seconds
+  }
 
-        prev = stat;
-    }
+  // Cleanup
+  if(pid > 0)
+    kill(pid); // Kill watcher
+  
+  unlink("quit");
 
-    restore_and_exit(0);
+  printf(ESC "[?25h"); // Reveal cursor back
+  
+  printf("\n\nDashboard closed.\n");
+  
+  exit(0);
 }
