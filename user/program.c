@@ -3,7 +3,7 @@
 #include "user/user.h"
 #include "kernel/fcntl.h"
 
-#define TOTAL_MEM (128ULL * 1024 * 1024)
+#define TOTAL_MEM (128ULL * 1024 * 1024) // Total memory in bytes
 #define MAX_PROCS 64
 #define ESC "\x1b"
 
@@ -28,11 +28,11 @@ void draw_bar(int row, uint64 val, uint64 max) {
       printf("░");
   }
   
-  printf("] %d%%          ", (int)((val * 100) / max));
+  printf("] %d%%", (int)((val * 100) / max));
 }
 
 int main(void) {
-  struct kstats s;
+  struct kstats stat;
   int pid;
   char c;
 
@@ -53,37 +53,40 @@ int main(void) {
   // Dashboard
   printf(ESC "[2J"); // Clear screen
   printf(ESC "[?25l"); // Hide cursor
-  printf(ESC "[1;1H        XV6 SYSTEM DASHBOARD          ");
+  printf(ESC "[1;1H         Kernel Data Dashboard        ");
   printf(ESC "[2;1H======================================");
 
   // Main Loop: Runs until "quit" file exists
   while(open("quit", 0) < 0) {
-    if(ugetstats(&s) < 0) {
+    if(ugetstats(&stat) < 0) {
       printf("Stats Error\n");
       break;
     }
 
-    uint64 used = TOTAL_MEM - s.freemem;
+    // Uptime
+    printf(ESC "[3;1HSystem Uptime: %d s (%d ticks)", stat.uptime_ticks/10, stat.uptime_ticks);
 
-    // 1. Uptime
-    printf(ESC "[3;1HSystem Uptime: %d s (%d ticks)    ", 
-           s.uptime_ticks/10, s.uptime_ticks);
+    // Memory Usage Bar
+    uint64 usedMem = TOTAL_MEM - stat.freemem;
 
-    // 2. Memory Bar
-    printf(ESC "[5;1HMemory Used:   %d / %d MB    ", 
-           (int)(used >> 20), (int)(TOTAL_MEM >> 20));
-    draw_bar(6, used, TOTAL_MEM);
+    printf(ESC "[5;1HMemory Used:   %d / %d MB", (int)(usedMem / (1024 * 1024)), (int)(TOTAL_MEM / (1024 * 1024)));
+    draw_bar(6, usedMem, TOTAL_MEM);
 
-    // 3. Process Bar (New Feature)
-    printf(ESC "[8;1HProcess Load:  %d / %d Slots    ", 
-           s.total_procs, MAX_PROCS);
-    draw_bar(9, s.total_procs, MAX_PROCS);
+    // Process Used Bar 
+    printf(ESC "[8;1HProcess Load:  %d / %d Slots", stat.total_procs, MAX_PROCS);
+    draw_bar(9, stat.total_procs, MAX_PROCS);
 
-    // 4. Details
-    printf(ESC "[11;1H [R] Running:  %d    ", s.n_running);
-    printf(ESC "[12;1H [W] Runnable: %d    ", s.n_runnable);
-    printf(ESC "[13;1H [S] Sleeping: %d    ", s.n_sleeping);
-    printf(ESC "[14;1H [Z] Zombie:   %d    ", s.n_zombie);
+    // Processes Details
+    printf(ESC "[11;1H Running:  %d", stat.n_running);
+    printf(ESC "[12;1H Runnable: %d", stat.n_runnable);
+    printf(ESC "[13;1H Sleeping: %d", stat.n_sleeping);
+    printf(ESC "[14;1H Zombie:   %d", stat.n_zombie);
+
+    // Disk reads/writes Counts
+    printf(ESC "[16;1HDisk I/O:    Reads: %ld | Writes: %ld ", stat.disk_reads, stat.disk_writes);
+    //To test Reads and Writes count: Run ls or grep
+    printf(ESC "[17;1H======================================");
+    printf(ESC "[18;1H         Press Enter to exit          ");
 
     pause(5); //Update every 5 tick ~ 0.5 seconds
   }

@@ -17,6 +17,8 @@ void            brelse(struct buf*);
 void            bwrite(struct buf*);
 void            bpin(struct buf*);
 void            bunpin(struct buf*);
+uint64          kdiskreads(void); // CUSTOM
+uint64          kdiskwrites(void); // CUSTOM
 
 // console.c
 void            consoleinit(void);

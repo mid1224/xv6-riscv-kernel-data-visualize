@@ -23,6 +23,9 @@
 #include "fs.h"
 #include "buf.h"
 
+uint64 disk_read_count = 0;
+uint64 disk_write_count = 0;
+
 struct {
   struct spinlock lock;
   struct buf buf[NBUF];
@@ -98,6 +101,12 @@ bread(uint dev, uint blockno)
   if(!b->valid) {
     virtio_disk_rw(b, 0);
     b->valid = 1;
+
+    // Count the number of reads HERE
+    acquire(&bcache.lock);
+    disk_read_count++;
+    release(&bcache.lock);
+    //
   }
   return b;
 }
@@ -108,6 +117,13 @@ bwrite(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
+
+  // Count the number of writes HERE
+  acquire(&bcache.lock);
+  disk_write_count++;
+  release(&bcache.lock);
+  //
+
   virtio_disk_rw(b, 1);
 }
 
@@ -151,3 +167,19 @@ bunpin(struct buf *b) {
 }
 
 
+//Custom functions
+uint64 kdiskreads(void) {
+  uint64 c;
+  acquire(&bcache.lock);
+  c = disk_read_count;
+  release(&bcache.lock);
+  return c;
+}
+
+uint64 kdiskwrites(void) {
+  uint64 c;
+  acquire(&bcache.lock);
+  c = disk_write_count;
+  release(&bcache.lock);
+  return c;
+}

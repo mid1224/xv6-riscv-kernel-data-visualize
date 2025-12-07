@@ -155,6 +155,11 @@ sys_ugetstats(void) // Get stats and return it to user space
   ks.freemem = kfreemem();
   //Gather processes count
   countprocs(&ks);
+
+  //Gather disk reads/writes count
+  ks.disk_reads = kdiskreads();
+  ks.disk_writes = kdiskwrites();
+
   //Gather Uptime
   acquire(&tickslock);      // Lock the ticker
   ks.uptime_ticks = ticks;  // Copy the current time

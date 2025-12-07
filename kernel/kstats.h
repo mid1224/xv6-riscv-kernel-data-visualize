@@ -18,9 +18,12 @@ struct kstats {
   int n_sleeping;      // Number of processes in SLEEPING state
   int n_zombie;        // Number of processes in ZOMBIE state
   int n_running;       // Number of processes in RUNNING state
-  int total_procs;     // Total processes in the table (not UNUSED)
+  int total_procs;     // Total processes in the table
 
   uint uptime_ticks; // Kernel ticks since boot
+
+  uint64 disk_reads; // Disk reads count
+  uint64 disk_writes; // Disk writes count
 };
 
 #endif // _KSTATS_H_
