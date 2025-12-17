@@ -109,38 +109,13 @@ sys_uptime(void)
   return xticks;
 }
 
-// !!! custom program here
+// custom program here
 
 // To access the system time
 extern uint ticks; 
 extern struct spinlock tickslock;
 
 // the kernel side program lives here
-uint64
-sys_kgetstats(void) // Get stats and print out on kernel side
-{
-  struct proc *p = myproc();
-
-  printf("kernel: kgetstats called by pid %d (running in kernel)\n", p->pid);
-  
-  struct kstats ks; // Declare a struct to store the data
-  
-  // Call our data-gathering functions
-  ks.freemem = kfreemem();
-  countprocs(&ks);
-  
-  // Print the results to the kernel console
-  printf("kernel: Free Memory (in bytes): %ld\n", ks.freemem);
-  printf("kernel: Free Memory (in megabytes): %ld\n", ks.freemem/(1024 * 1024)); //Converted from byte to megabyte for easier reading
-  printf("kernel: Total Procs: %d\n", ks.total_procs);
-  printf("kernel: Runnable: %d\n", ks.n_runnable);
-  printf("kernel: Sleeping: %d\n", ks.n_sleeping);
-  printf("kernel: Zombie: %d\n", ks.n_zombie);
-  printf("kernel: Running: %d\n", ks.n_running);
-
-  return 0;
-}
-
 uint64
 sys_ugetstats(void) // Get stats and return it to user space
 {

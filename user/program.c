@@ -58,10 +58,7 @@ int main(void) {
 
   // Main Loop: Runs until "quit" file exists
   while(open("quit", 0) < 0) {
-    if(ugetstats(&stat) < 0) {
-      printf("Stats Error\n");
-      break;
-    }
+    ugetstats(&stat);
 
     // Uptime
     printf(ESC "[3;1HSystem Uptime: %d s (%d ticks)", stat.uptime_ticks/10, stat.uptime_ticks);
@@ -84,7 +81,7 @@ int main(void) {
 
     // Disk reads/writes Counts
     printf(ESC "[16;1HDisk I/O:    Reads: %ld | Writes: %ld ", stat.disk_reads, stat.disk_writes);
-    //To test Reads and Writes count: Run ls or grep
+    //To test reads and writes count: Run ls or grep
     printf(ESC "[17;1H======================================");
     printf(ESC "[18;1H         Press Enter to exit          ");
 
