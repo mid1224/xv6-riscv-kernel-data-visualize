@@ -130,7 +130,6 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 // custom
-[SYS_kgetstats] sys_kgetstats,
 [SYS_ugetstats] sys_ugetstats,
 };
 

@@ -51,5 +51,4 @@ void* malloc(uint);
 void free(void*);
 
 // !!! custom program here
-int kgetstats(void);
 int ugetstats(struct kstats*);
