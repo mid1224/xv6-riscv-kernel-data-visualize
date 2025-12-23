@@ -111,10 +111,6 @@ sys_uptime(void)
 
 // custom program here
 
-// To access the system time
-extern uint ticks; 
-extern struct spinlock tickslock;
-
 // the kernel side program lives here
 uint64
 sys_ugetstats(void) // Get stats and return it to user space
@@ -136,9 +132,7 @@ sys_ugetstats(void) // Get stats and return it to user space
   ks.disk_writes = kdiskwrites();
 
   //Gather Uptime
-  acquire(&tickslock);      // Lock the ticker
-  ks.uptime_ticks = ticks;  // Copy the current time
-  release(&tickslock);      // Unlock
+  ks.uptime_ticks = sys_uptime();  // Copy the current time
 
   // Copy the struct from kernel space to user space
   copyout(myproc()->pagetable, user_addr, (char *)&ks, sizeof(ks));
