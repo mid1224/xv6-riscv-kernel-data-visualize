@@ -74,10 +74,10 @@ int main(void) {
     draw_bar(9, stat.total_procs, MAX_PROCS);
 
     // Processes Details
-    printf(ESC "[11;1H Running:  %d", stat.n_running);
-    printf(ESC "[12;1H Runnable: %d", stat.n_runnable);
-    printf(ESC "[13;1H Sleeping: %d", stat.n_sleeping);
-    printf(ESC "[14;1H Zombie:   %d", stat.n_zombie);
+    printf(ESC "[11;1H Running:  %d" ESC "[K", stat.n_running);
+    printf(ESC "[12;1H Runnable: %d" ESC "[K", stat.n_runnable);
+    printf(ESC "[13;1H Sleeping: %d" ESC "[K", stat.n_sleeping);
+    printf(ESC "[14;1H Zombie:   %d" ESC "[K", stat.n_zombie); //ESC "[K" to clear end-of-line to remove leftover digits from previous value if it was two digits
 
     // Disk reads/writes Counts
     printf(ESC "[16;1HDisk I/O:    Reads: %ld | Writes: %ld ", stat.disk_reads, stat.disk_writes);
