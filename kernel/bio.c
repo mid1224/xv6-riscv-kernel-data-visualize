@@ -99,10 +99,10 @@ bread(uint dev, uint blockno)
 
   b = bget(dev, blockno);
   if(!b->valid) {
-    virtio_disk_rw(b, 0);
+    virtio_disk_rw(b, 0); //0 for read disk
     b->valid = 1;
 
-    // Count the number of reads HERE
+    // Count the number of reads
     acquire(&bcache.lock);
     disk_read_count++;
     release(&bcache.lock);
@@ -118,13 +118,13 @@ bwrite(struct buf *b)
   if(!holdingsleep(&b->lock))
     panic("bwrite");
 
-  // Count the number of writes HERE
+  // Count the number of writes
   acquire(&bcache.lock);
   disk_write_count++;
   release(&bcache.lock);
   //
 
-  virtio_disk_rw(b, 1);
+  virtio_disk_rw(b, 1); //1 for write disk
 }
 
 // Release a locked buffer.

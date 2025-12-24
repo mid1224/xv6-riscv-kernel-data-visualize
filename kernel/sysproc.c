@@ -109,9 +109,7 @@ sys_uptime(void)
   return xticks;
 }
 
-// custom program here
-
-// the kernel side program lives here
+// custom
 uint64
 sys_ugetstats(void) // Get stats and return it to user space
 {

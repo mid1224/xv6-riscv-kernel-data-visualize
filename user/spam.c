@@ -57,15 +57,15 @@ int main(int argc, char *argv[])
 
   // Spam presets
   if(strcmp(argv[1], "light") == 0){
-    // LIGHT: 2 processes, 2MB RAM for each
+    // LIGHT: 2 processes (+1 for the fork() in main()), 2MB RAM for each
     spawn_children(2, 2); 
   } 
   else if(strcmp(argv[1], "medium") == 0){
-    // MEDIUM: 10 processes, 3MB RAM for each
+    // MEDIUM: 10 processes (+1), 3MB RAM for each
     spawn_children(10, 3);
   } 
   else if(strcmp(argv[1], "heavy") == 0){
-    // HEAVY: 45 processes, 2MB RAM for each
+    // HEAVY: 45 processes (+1), 2MB RAM for each
     spawn_children(45, 2);
   } 
   else {
